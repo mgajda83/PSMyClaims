@@ -2,6 +2,9 @@
 
 PSMyClaims is a PowerShell graphical tool for generate and debuging Azure AD OAuth and SAML tokens.
 
+# Install Module
+Install-Module -Name PSMyClaims
+
 # Azure AD App registrations
 
 OAuth Authentication:
