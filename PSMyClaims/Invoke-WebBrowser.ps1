@@ -3,7 +3,8 @@ Function Invoke-WebBrowser
     [CmdletBinding()]
     param (
         [Parameter(Mandatory=$true)]
-        [String]$Url
+        [String]$Url,
+        [Switch]$SAMLResponse
     )
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -AssemblyName System.Web
@@ -15,8 +16,16 @@ Function Invoke-WebBrowser
         $Global:uri = $WebBrowser.Url.AbsoluteUri
         if ($Global:uri -match "error=[^&]*|code=[^&]*") {$Form.Close() }
     }
+	$DocNav = {
+		if($WebBrowser.DocumentText -match "SAMLResponse")
+		{
+			$Script:SAMLToken = (([xml]$WebBrowser.DocumentText).GetElementsByTagName("input") | Where-Object name -eq SAMLResponse).value
+			$Form.Close()
+		}
+    }
     $WebBrowser.ScriptErrorsSuppressed = $true
     $WebBrowser.Add_DocumentCompleted($DocComp)
+    $WebBrowser.Add_Navigated($DocNav)
     $Form.AutoScaleMode = 'Dpi'
     $Form.text = "Azure AD Authentication"
     $Form.ShowIcon = $False
@@ -26,11 +35,16 @@ Function Invoke-WebBrowser
     $Form.Add_Shown({$Form.Activate()})
     [Void]$Form.ShowDialog()
     
-    $QueryOutput = [System.Web.HttpUtility]::ParseQueryString($WebBrowser.Url.Query)
-    $Output = @{}
-    foreach($Key in $QueryOutput.Keys){
-        $Output["$Key"] = $QueryOutput[$Key]
-    }
+	if($SAMLResponse)
+	{
+		$Output = $Script:SAMLToken
+	} else {
+		$QueryOutput = [System.Web.HttpUtility]::ParseQueryString($WebBrowser.Url.Query)
+		$Output = @{}
+		foreach($Key in $QueryOutput.Keys){
+			$Output["$Key"] = $QueryOutput[$Key]
+		}
+	}
 
     Return $Output
 }
