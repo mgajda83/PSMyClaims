@@ -9,10 +9,10 @@ Function Invoke-SAMLSignOut
     )
 
     $NameID = "Uz2Pqz1X7pxe4XLWxV9KJQ+n59d573SepSAkuYKSde8="
-    $ID = "_$((New-Guid).ToString() -replace '-')" #"_c82f819f9c23ca1f50ae6a6ed6e1d01c"
-    $IssueInstant = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ" #"2020-12-23T07:09:00Z"
+    $ID = "_$((New-Guid).ToString() -replace '-')" 
+    $IssueInstant = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ" 
 
-    $SAMLRequest = '<samlp:LogoutRequest xmlns="urn:oasis:names:tc:SAML:2.0:metadata" ID="'+$ID+'" Version="2.0" IssueInstant="'+$IssueInstant+'" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"><Issuer xmlns="urn:oasis:names:tc:SAML:2.0:assertion">'+$RedirectUri+'</Issuer><NameID xmlns="urn:oasis:names:tc:SAML:2.0:assertion">'+$NameID+'</NameID></samlp:LogoutRequest>'
+    $SAMLRequest = '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" Destination="https://login.microsoftonline.com/' + $TenantId + '/saml2" ID="' + $ID + '" IssueInstant="' + $IssueInstant + '" Version="2.0"><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">' + $RedirectUri + '</saml:Issuer><saml:NameID xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">' + $NameID + '</saml:NameID></samlp:LogoutRequest>'
     
     $DeflateSAMLRequest = Invoke-CompressDeflatedBase64 -Content $SAMLRequest
 
