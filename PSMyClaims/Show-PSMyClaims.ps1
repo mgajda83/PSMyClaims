@@ -184,7 +184,7 @@ Function Show-PSMyClaims
                     
                     <Label Content="Options" Margin="10,190,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="100" />
                     <CheckBox x:Name="ForceAuthCheckBox" Content="ForceAuth" HorizontalAlignment="Left" Margin="115,191,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="RequireMFACheckBox" Content="Require MFA" HorizontalAlignment="Left" Margin="208,191,0,0" VerticalAlignment="Top"/>
+                    <CheckBox x:Name="RequireMFACheckBox" Content="Require MFA" HorizontalAlignment="Left" Margin="208,191,0,0" VerticalAlignment="Top" Visibility="Hidden"/>
                 </Grid>
             </TabItem>
             <TabItem Name="TokenRequestTab" Header="Token Request" Visibility="Hidden">
