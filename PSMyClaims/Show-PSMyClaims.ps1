@@ -136,9 +136,9 @@ Function Get-Token
             break
         }
         "SAML" { 
-            if($ForceAuthCheckBox.IsChecked) { $ForceAuthn = 1 } else { $ForceAuthn = 0 }
+            if($SAMLForceAuthCheckBox.IsChecked) { $ForceAuthn = 1 } else { $ForceAuthn = 0 }
             $NameIDPolicyFormat = $SAMLNameIDPolicyFormatComboBox.Text
-            $Result = Invoke-SAMLToken -TenantId $TenantIdText.Text -RedirectUri $RedirectURIText.Text -ForceAuthn $ForceAuthn -NameIDPolicyFormat $NameIDPolicyFormat
+            $Result = Invoke-SAMLToken -TenantId $SAMLTenantIdText.Text -RedirectUri $SAMLRedirectURIText.Text -ForceAuthn $ForceAuthn -NameIDPolicyFormat $NameIDPolicyFormat
             $Result | Add-Member -MemberType NoteProperty -Name TokenType -Value "SAML"
 
             [xml]$SAMLRequest = $Result.TokenRequest
@@ -331,15 +331,19 @@ Function Show-PSMyClaims
 
     # SAML Settings Tab
     $SAMLSettingsTab = $Window.FindName("SAMLSettingsTab")
+    $SAMLTenantIdText = $Window.FindName("SAMLTenantIdText")
+    $SAMLRedirectURIText = $Window.FindName("SAMLRedirectURIText")
     $SAMLNameIDPolicyFormatComboBox = $Window.FindName("SAMLNameIDPolicyComboBox")
     $SAMLForceAuthCheckBox = $Window.FindName("SAMLForceAuthCheckBox")
 
     # Put value
     if($PSBoundParameters.ContainsKey("TenantId")) { $TenantIdText.Text = $TenantId }
+    if($PSBoundParameters.ContainsKey("TenantId")) { $SAMLTenantIdText.Text = $TenantId }
     if($PSBoundParameters.ContainsKey("ClientId")) { $ClientIdText.Text = $ClientId }
     if($PSBoundParameters.ContainsKey("ClientSecret")) { $ClientSecretText.Text = $ClientSecret }
     if($PSBoundParameters.ContainsKey("Scope")) { $ScopeText.Text = $Scope }
     if($PSBoundParameters.ContainsKey("RedirectUri")) { $RedirectURIText.Text = $RedirectUri }
+    if($PSBoundParameters.ContainsKey("RedirectUri")) { $SAMLRedirectURIText.Text = $RedirectUri }
     if($PSBoundParameters.ContainsKey("ForceAuthn")) { $ForceAuthCheckBox.IsChecked = $true }
     #if($PSBoundParameters.ContainsKey("NameIDPolicyFormat")) { $NameIDPolicyFormat = $true }
 
