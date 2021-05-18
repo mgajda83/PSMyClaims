@@ -8,7 +8,9 @@ Function Invoke-SAMLToken
         [Parameter(Mandatory=$true)]
         [String]$RedirectUri,
         [Parameter(Mandatory=$true)]
-        [String]$ForceAuthn
+        [String]$ForceAuthn,
+        [Parameter(Mandatory=$true)]
+        [String]$NameIDPolicyFormat
     )
     Write-Host "Invoke-SAMLToken" -ForegroundColor DarkBlue
 
@@ -16,8 +18,8 @@ Function Invoke-SAMLToken
     $ID = "_$((New-Guid).ToString() -replace '-')" 
     $IssueInstant = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ" 
     
-    $SAMLRequest = '<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" Destination="https://login.microsoftonline.com/'+$TenantID+'/saml2" ForceAuthn="'+$ForceAuthn+'" ID="'+$ID+'" IssueInstant="'+$IssueInstant+'" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" ProviderName="'+$RedirectUri+'" Version="2.0"><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">'+$RedirectUri+'</saml:Issuer><samlp:NameIDPolicy AllowCreate="1"/></samlp:AuthnRequest>'
-    
+    $SAMLRequest = '<?xml version="1.0" encoding="UTF-8"?><saml2p:AuthnRequest AssertionConsumerServiceURL="'+$RedirectUri+'" Destination="https://login.microsoftonline.com/'+$TenantID+'/saml2" ForceAuthn="'+$ForceAuthn+'" ID="'+$ID+'" IsPassive="false" IssueInstant="'+$IssueInstant+'" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Version="2.0" xmlns:saml2p="urn:oasis:names:tc:SAML:2.0:protocol"><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">'+$RedirectUri+'</saml:Issuer><saml2p:NameIDPolicy Format="'+$NameIDPolicyFormat+'"/></saml2p:AuthnRequest>'
+
     $DeflateSAMLRequest = Invoke-CompressDeflatedBase64 -Content $SAMLRequest
 
     $Url = 'https://login.microsoftonline.com/{0}/saml2' -f $TenantId
