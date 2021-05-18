@@ -1,3 +1,44 @@
+Function Show-Settings
+{
+    [CmdletBinding()]
+    Param()
+
+    switch ($GrantTypeComboBox.Items[$GrantTypeComboBox.SelectedIndex].Name) 
+    {
+        "AuthorizationCode" { 
+            $SettingsTab.Visibility = "Visible"
+            $SAMLSettingsTab.Visibility = "Collapsed"
+            $TabControl.SelectedIndex = 0
+            break 
+        }
+        "ClientCredentials" { 
+            $SettingsTab.Visibility = "Visible"
+            $SAMLSettingsTab.Visibility = "Collapsed"
+            $TabControl.SelectedIndex = 0
+            break
+        }
+        "DeviceCode" { 
+            $SettingsTab.Visibility = "Visible"
+            $SAMLSettingsTab.Visibility = "Collapsed"
+            $TabControl.SelectedIndex = 0
+            break
+        }
+        "Password" { 
+            $SettingsTab.Visibility = "Visible"
+            $SAMLSettingsTab.Visibility = "Collapsed"
+            $TabControl.SelectedIndex = 0
+            break
+        }
+        "SAML" { 
+            $SettingsTab.Visibility = "Collapsed"
+            $SAMLSettingsTab.Visibility = "Visible"
+            $TabControl.SelectedIndex = 1
+            break
+        }
+        Default {}
+    }
+}
+
 Function Show-TokenResponse
 {
     [CmdletBinding()]
@@ -13,8 +54,8 @@ Function Show-TokenResponse
    
     if($TokenResult.TokenType -eq "SAML")
     {
-        $AccessTokenTab.Visibility = "Hidden"
-        $IdTokenTab.Visibility = "Hidden"
+        $AccessTokenTab.Visibility = "Collapsed"
+        $IdTokenTab.Visibility = "Collapsed"
 
         try {
             $EncSAMLTokenText.Text = $TokenResult.TokenResponse
@@ -24,10 +65,10 @@ Function Show-TokenResponse
             $SAMLTokenTab.Visibility = "Visible"
         }
         catch {
-            $SAMLTokenTab.Visibility = "Hidden"
+            $SAMLTokenTab.Visibility = "Collapsed"
         }
     } else {
-        $SAMLTokenTab.Visibility = "Hidden"
+        $SAMLTokenTab.Visibility = "Collapsed"
 
         # Access Token Tab
         if($TokenResult.TokenResponse.access_token)
@@ -40,10 +81,10 @@ Function Show-TokenResponse
                 $AccessTokenTab.Visibility = "Visible"
             }
             catch {
-                $AccessTokenTab.Visibility = "Hidden"
+                $AccessTokenTab.Visibility = "Collapsed"
             }
         } else {
-            $AccessTokenTab.Visibility = "Hidden"
+            $AccessTokenTab.Visibility = "Collapsed"
         }
 
         # ID Token Tab
@@ -57,10 +98,10 @@ Function Show-TokenResponse
                 $IdTokenTab.Visibility = "Visible"
             }
             catch {
-                $IdTokenTab.Visibility = "Hidden"
+                $IdTokenTab.Visibility = "Collapsed"
             }
         } else {
-            $IdTokenTab.Visibility = "Hidden"
+            $IdTokenTab.Visibility = "Collapsed"
         }
     }
     Set-Variable -Name Token -Value $TokenResult.TokenResponse -Scope Global
@@ -96,7 +137,8 @@ Function Get-Token
         }
         "SAML" { 
             if($ForceAuthCheckBox.IsChecked) { $ForceAuthn = 1 } else { $ForceAuthn = 0 }
-            $Result = Invoke-SAMLToken -TenantId $TenantIdText.Text -RedirectUri $RedirectURIText.Text -ForceAuthn $ForceAuthn
+            $NameIDPolicyFormat = $SAMLNameIDPolicyFormatComboBox.Text
+            $Result = Invoke-SAMLToken -TenantId $TenantIdText.Text -RedirectUri $RedirectURIText.Text -ForceAuthn $ForceAuthn -NameIDPolicyFormat $NameIDPolicyFormat
             $Result | Add-Member -MemberType NoteProperty -Name TokenType -Value "SAML"
 
             [xml]$SAMLRequest = $Result.TokenRequest
@@ -112,6 +154,16 @@ Function Get-Token
 
     # Token Info Tab
     Show-TokenResponse -TokenResult $Result
+}
+
+Function Invoke-SignOut
+{
+    if($SAMLTokenTab.Visibility = "Visible")
+    {
+        Invoke-SAMLSignOut -TenantId $TenantIdText.Text -RedirectUri $RedrectURIText.Text
+    } else {
+        Invoke-OAuthSignOut -TenantId $TenantIdText.Text -RedirectUri $RedrectURIText.Text
+    }
 }
 
 <#
@@ -135,7 +187,8 @@ Function Show-PSMyClaims
         [String]$ClientSecret,
         [String]$Scope,
         [String]$RedirectUri,
-        [Switch]$ForceAuthn
+        [Switch]$ForceAuthn,
+        [String]$NameIDPolicyFormat
     )
     
     Add-Type -AssemblyName PresentationFramework
@@ -164,42 +217,58 @@ Function Show-PSMyClaims
         <Button x:Name="GetTokenButton"  Content="Get token" HorizontalAlignment="Left" Padding="0" Margin="221,10,0,10" FontFamily="Segoe Ui" Width="100" Grid.Row="0" Grid.Column="1"/>
         <Button x:Name="SignOutButton"  Content="Sign Out" HorizontalAlignment="Left" Padding="0" Margin="326,10,0,10" FontFamily="Segoe Ui" Width="100" Grid.Row="0" Grid.Column="1" Visibility="Hidden"/>
 
-        <TabControl Margin="10"  Grid.Row="1" Grid.ColumnSpan="2">
-            <TabItem Header="Settings" Margin="0,0,-4,-2">
+        <TabControl Name="TabControl" Margin="10"  Grid.Row="1" Grid.ColumnSpan="2">
+            <TabItem Name="SettingsTab" Header="Settings" Margin="0,0,-4,-2">
                 <Grid Background="#FFE5E5E5" Margin="0,-1,0,1">
-                    <Label Content="Tenant Id" Margin="10,10,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="100" />
-                    <TextBox x:Name="TenantIdText" TextWrapping="Wrap" Margin="115,10,10,0" Text="00000000-0000-0000-0000-000000000000" Height="20" VerticalAlignment="Top" />
+                    <Label Content="Tenant Id" Margin="10,10,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="120" />
+                    <TextBox x:Name="TenantIdText" TextWrapping="Wrap" Margin="130,10,10,0" Text="00000000-0000-0000-0000-000000000000" Height="20" VerticalAlignment="Top" />
 
-                    <Label Content="Client Id" Margin="10,40,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="100" />
-                    <TextBox x:Name="ClientIdText" TextWrapping="Wrap" Margin="115,40,10,0" FontFamily="Segoe Ui" Text="00000000-0000-0000-0000-000000000000" Height="20" VerticalAlignment="Top" />
+                    <Label Content="Client Id" Margin="10,40,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="120" />
+                    <TextBox x:Name="ClientIdText" TextWrapping="Wrap" Margin="130,40,10,0" FontFamily="Segoe Ui" Text="00000000-0000-0000-0000-000000000000" Height="20" VerticalAlignment="Top" />
 
-                    <Label Content="Client Secret" Margin="10,70,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="100"/>
-                    <TextBox x:Name="ClientSecretText" TextWrapping="Wrap" Margin="115,70,10,0" FontFamily="Segoe Ui" Text="App_secret" Height="20" VerticalAlignment="Top" />
+                    <Label Content="Client Secret" Margin="10,70,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="120"/>
+                    <TextBox x:Name="ClientSecretText" TextWrapping="Wrap" Margin="130,70,10,0" FontFamily="Segoe Ui" Text="App_secret" Height="20" VerticalAlignment="Top" />
 
-                    <Label Content="Redirect URI" Margin="10,100,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="100" />
-                    <TextBox x:Name="RedirectURIText" TextWrapping="Wrap" Margin="115,100,10,0" FontFamily="Segoe Ui" Text="https://localhost/PSMyClaims" Height="20" VerticalAlignment="Top" />
+                    <Label Content="Redirect URI" Margin="10,100,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="120" />
+                    <TextBox x:Name="RedirectURIText" TextWrapping="Wrap" Margin="130,100,10,0" FontFamily="Segoe Ui" Text="https://localhost/PSMyClaims" Height="20" VerticalAlignment="Top" />
 
-                    <Label Content="Scope" Margin="10,130,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="100" />
-                    <TextBox x:Name="ScopeText" TextWrapping="Wrap" Margin="115,130,10,0" FontFamily="Segoe Ui" Text="openid profile" Height="20" VerticalAlignment="Top" />
-                    
-                    <Label Content="Options" Margin="10,190,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="100" />
-                    <CheckBox x:Name="ForceAuthCheckBox" Content="ForceAuth" HorizontalAlignment="Left" Margin="115,191,0,0" VerticalAlignment="Top"/>
-                    <CheckBox x:Name="RequireMFACheckBox" Content="Require MFA" HorizontalAlignment="Left" Margin="208,191,0,0" VerticalAlignment="Top" Visibility="Hidden"/>
+                    <Label Content="Scope" Margin="10,130,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="120" />
+                    <TextBox x:Name="ScopeText" TextWrapping="Wrap" Margin="130,130,10,0" FontFamily="Segoe Ui" Text="openid profile" Height="20" VerticalAlignment="Top" />
                 </Grid>
             </TabItem>
-            <TabItem Name="TokenRequestTab" Header="Token Request" Visibility="Hidden">
+            <TabItem Name="SAMLSettingsTab" Header="SAML Settings" Margin="0,0,-4,-2" Visibility="Collapsed">
+                <Grid Background="#FFE5E5E5" Margin="0,-1,0,1">
+                    <Label Content="Tenant Id" Margin="10,10,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="120" />
+                    <TextBox x:Name="SAMLTenantIdText" TextWrapping="Wrap" Margin="130,10,10,0" Text="00000000-0000-0000-0000-000000000000" Height="20" VerticalAlignment="Top" />
+
+                    <Label Content="Redirect URI" Margin="10,40,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="120" />
+                    <TextBox x:Name="SAMLRedirectURIText" TextWrapping="Wrap" Margin="130,40,10,0" FontFamily="Segoe Ui" Text="https://localhost/PSMyClaims" Height="20" VerticalAlignment="Top" />
+
+                    <Label Content="SAML NameIDPolicy" Margin="10,70,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="120"/>
+                    <ComboBox x:Name="SAMLNameIDPolicyComboBox" IsEditable="True" HorizontalAlignment="Left" Margin="130,70,0,0" VerticalAlignment="Top" Height="20" SelectedIndex="0" Padding="5,1,0,0">
+                        <ComboBoxItem Name="SAML20persistent" Content="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent" Margin="0,0,0,0" />
+                        <ComboBoxItem Name="SAML20transient" Content="urn:oasis:names:tc:SAML:2.0:nameid-format:transient" Margin="0,0,0,0" />
+                        <ComboBoxItem Name="SAML11emailAddress" Content="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress" Margin="0,0,0,0" />
+                        <ComboBoxItem Name="SAML11unspecified" Content="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified" Margin="0,0,0,0" />
+                    </ComboBox>
+
+                    <Label Content="SAML ForceAuth" Margin="10,100,0,0" FontFamily="Segoe Ui" Height="20" VerticalAlignment="Top" Padding="0" HorizontalAlignment="Left" Width="120"/>
+                    <CheckBox x:Name="SAMLForceAuthCheckBox" Content="ForceAuth" HorizontalAlignment="Left" Margin="130,100,0,0" VerticalAlignment="Top"/>
+                </Grid>
+            </TabItem>            
+            <TabItem Name="TokenRequestTab" Header="Token Request" Visibility="Collapsed">
                 <Grid Background="#FFE5E5E5">
                     <Label Content="Token Request" Margin="10,10,10,0" FontFamily="Segoe Ui" Height="25" VerticalAlignment="Top" />
                     <TextBox x:Name="TokenRequestText" TextWrapping="Wrap" Margin="10,40,10,10" FontFamily="Segoe Ui" VerticalScrollBarVisibility="Auto" Panel.ZIndex="-1" VerticalContentAlignment="Stretch" MinHeight="2" MinWidth="2" />
                 </Grid>
             </TabItem>
-            <TabItem Name="TokenInfoTab" Header="Token Info"  Visibility="Hidden">
+            <TabItem Name="TokenInfoTab" Header="Token Info"  Visibility="Collapsed">
                 <Grid Background="#FFE5E5E5">
                     <Label Content="Token Info" Margin="10,10,10,0" FontFamily="Segoe Ui" Height="25" VerticalAlignment="Top" />
                     <TextBox x:Name="TokenInfoText" TextWrapping="Wrap" Margin="10,40,10,10" FontFamily="Segoe Ui" VerticalScrollBarVisibility="Auto" Panel.ZIndex="-1" VerticalContentAlignment="Stretch" MinHeight="2" MinWidth="2" />
                 </Grid>
             </TabItem>
-            <TabItem Name="AccessTokenTab" Header="Access token" Visibility="Hidden">
+            <TabItem Name="AccessTokenTab" Header="Access token" Visibility="Collapsed">
                 <Grid Background="#FFE5E5E5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/>
@@ -212,7 +281,7 @@ Function Show-PSMyClaims
                     <TextBox x:Name="DecAccessTokenText" TextWrapping="Wrap" Margin="10,40,4,10" FontFamily="Segoe Ui" VerticalScrollBarVisibility="Auto" Panel.ZIndex="-1" VerticalContentAlignment="Stretch" MinHeight="2" MinWidth="2" Grid.Column="1"/>
                 </Grid>
             </TabItem>
-            <TabItem Name="IdTokenTab" Header="Id token" Visibility="Hidden">
+            <TabItem Name="IdTokenTab" Header="Id token" Visibility="Collapsed">
                 <Grid Background="#FFE5E5E5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/>
@@ -225,7 +294,7 @@ Function Show-PSMyClaims
                     <TextBox x:Name="DecIdTokenText" TextWrapping="Wrap" Margin="10,40,4,10" FontFamily="Segoe Ui" VerticalScrollBarVisibility="Auto" Panel.ZIndex="-1" VerticalContentAlignment="Stretch" MinHeight="2" MinWidth="2" Grid.Column="1"/>
                 </Grid>
             </TabItem>
-            <TabItem Name="SAMLTokenTab" Header="SAML token" Visibility="Hidden">
+            <TabItem Name="SAMLTokenTab" Header="SAML token" Visibility="Collapsed">
                 <Grid Background="#FFE5E5E5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/>
@@ -250,14 +319,20 @@ Function Show-PSMyClaims
     $GetTokenButton = $Window.FindName("GetTokenButton")
     $SignOutButton = $Window.FindName("SignOutButton")
     $GrantTypeComboBox = $Window.FindName("GrantTypeComboBox")
+    $TabControl = $Window.FindName("TabControl")
 
     # Settings Tab
+    $SettingsTab = $Window.FindName("SettingsTab")
     $TenantIdText = $Window.FindName("TenantIdText")
     $ClientIdText = $Window.FindName("ClientIdText")
     $ClientSecretText = $Window.FindName("ClientSecretText")
     $RedirectURIText = $Window.FindName("RedirectURIText")
     $ScopeText = $Window.FindName("ScopeText")
-    $ForceAuthCheckBox = $Window.FindName("ForceAuthCheckBox")
+
+    # SAML Settings Tab
+    $SAMLSettingsTab = $Window.FindName("SAMLSettingsTab")
+    $SAMLNameIDPolicyFormatComboBox = $Window.FindName("SAMLNameIDPolicyComboBox")
+    $SAMLForceAuthCheckBox = $Window.FindName("SAMLForceAuthCheckBox")
 
     # Put value
     if($PSBoundParameters.ContainsKey("TenantId")) { $TenantIdText.Text = $TenantId }
@@ -266,6 +341,7 @@ Function Show-PSMyClaims
     if($PSBoundParameters.ContainsKey("Scope")) { $ScopeText.Text = $Scope }
     if($PSBoundParameters.ContainsKey("RedirectUri")) { $RedirectURIText.Text = $RedirectUri }
     if($PSBoundParameters.ContainsKey("ForceAuthn")) { $ForceAuthCheckBox.IsChecked = $true }
+    #if($PSBoundParameters.ContainsKey("NameIDPolicyFormat")) { $NameIDPolicyFormat = $true }
 
     # Token Request Tab
     $TokenRequestTab = $Window.FindName("TokenRequestTab")
@@ -291,11 +367,14 @@ Function Show-PSMyClaims
     $DecSAMLTokenText = $Window.FindName("DecSAMLTokenText")
 
     # Put Events
+    $GrantTypeComboBoxSelectionChanged = $GrantTypeComboBox.add_selectionchanged
+    $GrantTypeComboBoxSelectionChanged.Invoke({Show-Settings})
+
     $GetTokenButtonClick = $GetTokenButton.add_click
     $GetTokenButtonClick.Invoke({Get-Token})
 
     $SignOutButtonClick = $SignOutButton.add_click
-    $SignOutButtonClick.Invoke({Invoke-SignOut -TenantId $TenantIdText.Text -RedirectUri $RedrectURIText.Text})
+    $SignOutButtonClick.Invoke({Invoke-SignOut})
 
     # Run
     [Void]$Window.ShowDialog()
